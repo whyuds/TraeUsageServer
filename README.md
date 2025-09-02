@@ -26,6 +26,12 @@ npm run dev
 - 组页面: http://localhost:8080?group=组ID
 - WebSocket端点: ws://localhost:8080/ws
 
+## 服务器部署
+
+```bash
+npx pm2 start server.js --name "trae-usage-server"
+```
+
 ## 客户端集成
 
 客户端需要连接到 `ws://服务器地址:8080/ws` 并发送心跳消息。
