@@ -11,6 +11,11 @@ function formatTime(timestamp) {
     return new Date(timestamp * 1000).toLocaleString('zh-CN');
 }
 
+// 格式化日期（只显示日期）
+function formatDate(timestamp) {
+    return new Date(timestamp * 1000).toLocaleDateString('zh-CN');
+}
+
 // 格式化相对时间
 function formatRelativeTime(timestamp) {
     const now = Date.now();
@@ -97,15 +102,13 @@ function createUserCard(user) {
                 
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: ${progress}%"></div>
-                </div>
-                
-                <div class="usage-text">
-                    已使用: ${user.subscription.usage} / ${user.subscription.limit} (${progress.toFixed(1)}%)
+                    <div class="usage-text">
+                        已使用: ${user.subscription.usage} / ${user.subscription.limit} (${progress.toFixed(1)}%)
+                    </div>
                 </div>
                 
                 <div class="subscription-time">
-                    ${formatTime(user.subscription.start_time)}<br>
-                    ${formatTime(user.subscription.end_time)}
+                    ${formatDate(user.subscription.start_time)} - ${formatDate(user.subscription.end_time)}
                 </div>
             </div>
         </div>
@@ -164,8 +167,8 @@ function updateUserCard(user, cardElement) {
         `已使用: ${user.subscription.usage} / ${user.subscription.limit} (${progress.toFixed(1)}%)`;
     
     // 更新订阅时间
-    cardElement.querySelector('.subscription-time').innerHTML = 
-        `${formatTime(user.subscription.start_time)}<br>${formatTime(user.subscription.end_time)}`;
+    cardElement.querySelector('.subscription-time').textContent = 
+        `${formatDate(user.subscription.start_time)} - ${formatDate(user.subscription.end_time)}`;
 }
 
 // 平滑更新用户列表
