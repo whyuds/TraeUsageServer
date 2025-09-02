@@ -8,36 +8,10 @@
 </head>
 <body>
     <div class="container">
-        <div class="sidebar">
-            <h2>监控概览</h2>
-            <div class="stats" id="stats">
-                <div class="stat-card">
-                    <h3>在线用户</h3>
-                    <div class="value" id="onlineUsers">-</div>
-                </div>
-                <div class="stat-card">
-                    <h3>总用户数</h3>
-                    <div class="value" id="totalUsers">-</div>
-                </div>
-                <div class="stat-card">
-                    <h3>活跃设备</h3>
-                    <div class="value" id="activeDevices">-</div>
-                </div>
-                <div class="stat-card">
-                    <h3>最后更新</h3>
-                    <div class="value" id="lastUpdate">-</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="main-content">
-            <div id="loading" class="loading">加载中...</div>
-            <div id="error" class="error" style="display: none;">加载失败，请稍后重试</div>
-            
-            <div class="users-grid" id="usersGrid"></div>
-        </div>
+        <div id="loading" class="loading">加载中...</div>
+        <div id="error" class="error" style="display: none;">加载失败，请稍后重试</div>
+        <div class="users-grid" id="usersGrid"></div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
