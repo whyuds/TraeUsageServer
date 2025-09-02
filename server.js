@@ -2,9 +2,36 @@ const WebSocket = require('ws');
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const fs = require('fs');
+const util = require('util');
 
 const app = express();
 const server = http.createServer(app);
+
+// 日志配置
+const LOG_FILE = path.join(__dirname, 'server.log');
+const logStream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
+
+// 日志函数
+function log(level, message, ...args) {
+  const timestamp = new Date().toISOString();
+  const formattedMessage = util.format(message, ...args);
+  const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${formattedMessage}\n`;
+  
+  // 写入文件
+  logStream.write(logEntry);
+  
+  // 同时输出到控制台（可选）
+  console.log(`[${timestamp}] [${level.toUpperCase()}] ${formattedMessage}`);
+}
+
+// 便捷的日志方法
+const logger = {
+  info: (message, ...args) => log('info', message, ...args),
+  error: (message, ...args) => log('error', message, ...args),
+  warn: (message, ...args) => log('warn', message, ...args),
+  debug: (message, ...args) => log('debug', message, ...args)
+};
 
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public')));
@@ -160,26 +187,26 @@ const wss = new WebSocket.Server({
 });
 
 wss.on('connection', (ws, req) => {
-  console.log('New WebSocket connection from:', req.socket.remoteAddress);
+  logger.info('New WebSocket connection from: %s', req.socket.remoteAddress);
   
   ws.on('message', (data) => {
     try {
       const message = JSON.parse(data.toString());
       
       if (message.type === 'heartbeat') {
-        console.log('Received heartbeat from user:', message.user_id);
+        logger.info('Received heartbeat from user: %s, data: %s', message.user_id, JSON.stringify(message));
         userManager.updateUser(message, ws);
         
         // 发送确认
         ws.send(JSON.stringify({ type: 'ack', timestamp: Date.now() }));
       }
     } catch (error) {
-      console.error('Error processing message:', error);
+      logger.error('Error processing message: %s', error.message);
     }
   });
   
   ws.on('close', () => {
-    console.log('WebSocket connection closed');
+    logger.info('WebSocket connection closed');
     // 查找并移除连接
     for (const [clientId, connection] of userManager.connections) {
       if (connection === ws) {
@@ -190,22 +217,22 @@ wss.on('connection', (ws, req) => {
   });
   
   ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
+    logger.error('WebSocket error: %s', error.message);
   });
 });
 
 // API路由
 app.get('/api/users', (req, res) => {
   const groupId = req.query.group;
-  console.log(`API request: /api/users${groupId ? `?group=${groupId}` : ''}`);
+  logger.info('API request: /api/users%s', groupId ? `?group=${groupId}` : '');
   let users;
   
   if (groupId) {
     users = userManager.getGroupUsers(groupId);
-    console.log(`Returning ${users.length} users for group ${groupId}`);
+    logger.info('Returning %d users for group %s', users.length, groupId);
   } else {
     users = userManager.getDefaultUsers();
-    console.log(`Returning ${users.length} default users`);
+    logger.info('Returning %d default users', users.length);
   }
   
   res.json({ users, timestamp: Date.now() });
@@ -228,9 +255,28 @@ setInterval(() => {
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`WebSocket endpoint: ws://localhost:${PORT}/ws`);
-  console.log(`Web interface: http://localhost:${PORT}`);
+  logger.info('Server running on port %d', PORT);
+  logger.info('WebSocket endpoint: ws://localhost:%d/ws', PORT);
+  logger.info('Web interface: http://localhost:%d', PORT);
+});
+
+// 优雅关闭处理
+process.on('SIGINT', () => {
+  logger.info('Received SIGINT, closing server gracefully...');
+  logStream.end();
+  server.close(() => {
+    logger.info('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', () => {
+  logger.info('Received SIGTERM, closing server gracefully...');
+  logStream.end();
+  server.close(() => {
+    logger.info('Server closed');
+    process.exit(0);
+  });
 });
 
 module.exports = { app, server, userManager };
