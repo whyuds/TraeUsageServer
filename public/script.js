@@ -46,7 +46,7 @@ function createUserCard(user) {
                 订阅量: ${limit} | 已使用: ${usage} | 有效期: ${formatDate(start_time)} - ${formatDate(end_time)}
             </div>
             <div class="user-header">
-                <div class="user-id">用户 ${user_id}</div>
+                <div class="user-id">${user_id}</div>
                 <div class="status ${online ? 'online' : 'offline'}">
                     ${online ? '在线' : '离线'}
                 </div>
