@@ -17,12 +17,41 @@ function formatDate(timestamp) {
     return new Date(timestamp * 1000).toLocaleDateString('zh-CN');
 }
 
+// 计算设备数量（按machineId去重）
+function calculateDeviceCount(devices) {
+    if (!devices || !Array.isArray(devices)) return 0;
+    
+    const uniqueMachineIds = new Set();
+    devices.forEach(device => {
+        if (device.machineId && device.connected) {
+            uniqueMachineIds.add(device.machineId);
+        }
+    });
+    
+    return uniqueMachineIds.size;
+}
+
 // 生成模拟数据
 function generateMockUsers() {
     return [{
         user_id: '00000000',
         online: true,
-        deviceCount: 2,
+        devices: [
+            {
+                clientId: 'mock-client-1',
+                machineId: 'mock-machine-1',
+                ip: 'unknown',
+                lastHeartbeat: Date.now() - 60000,
+                connected: true
+            },
+            {
+                clientId: 'mock-client-2',
+                machineId: 'mock-machine-1', // 同一台设备
+                ip: 'unknown',
+                lastHeartbeat: Date.now() - 30000,
+                connected: true
+            }
+        ],
         lastSeen: Date.now() - 300000,
         subscription: {
             isActive: true,
@@ -37,7 +66,8 @@ function generateMockUsers() {
 
 // 创建用户卡片
 function createUserCard(user) {
-    const { online, subscription, deviceCount = 0, lastSeen, user_id } = user;
+    const { online, subscription, devices = [], lastSeen, user_id } = user;
+    const deviceCount = calculateDeviceCount(devices);
     const { progress = 0, usage, limit, start_time, end_time, isActive } = subscription;
     
     return `
@@ -83,7 +113,8 @@ function createUserCard(user) {
 
 // 更新用户卡片
 function updateUserCard(user, cardElement) {
-    const { online, subscription, deviceCount = 0, lastSeen } = user;
+    const { online, subscription, devices = [], lastSeen } = user;
+    const deviceCount = calculateDeviceCount(devices);
     const { progress = 0, usage, limit, start_time, end_time, isActive } = subscription;
     
     cardElement.className = `user-card ${online ? 'online' : 'offline'}`;
@@ -109,6 +140,19 @@ function updateUserCard(user, cardElement) {
         `${formatDate(start_time)} - ${formatDate(end_time)}`;
 }
 
+// 处理用户数据，计算正确的设备数量
+function processUserData(users) {
+    return users.map(user => {
+        // 如果有 devices 数组，重新计算 deviceCount
+        if (user.devices && Array.isArray(user.devices)) {
+            user.deviceCount = calculateDeviceCount(user.devices);
+        } else if (user.deviceCount === undefined) {
+            user.deviceCount = 0;
+        }
+        return user;
+    });
+}
+
 // 更新用户列表
 function updateUsersGrid(users) {
     const usersGrid = document.getElementById('usersGrid');
@@ -118,9 +162,12 @@ function updateUsersGrid(users) {
         return;
     }
     
+    // 处理用户数据，确保设备计数正确
+    const processedUsers = processUserData(users);
+    
     const existingCards = usersGrid.querySelectorAll('.user-card[data-user-id]');
     const existingUserIds = new Set(Array.from(existingCards).map(card => card.dataset.userId));
-    const newUserIds = new Set(users.map(user => user.user_id));
+    const newUserIds = new Set(processedUsers.map(user => user.user_id));
     
     // 移除不存在的用户
     existingCards.forEach(card => {
@@ -130,7 +177,7 @@ function updateUsersGrid(users) {
     });
     
     // 更新或添加用户卡片
-    users.forEach(user => {
+    processedUsers.forEach(user => {
         const existingCard = usersGrid.querySelector(`[data-user-id="${user.user_id}"]`);
         
         if (existingCard) {
